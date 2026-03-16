@@ -1,0 +1,453 @@
+basePath: /api/v1
+definitions:
+  controllers.LoginInput:
+    properties:
+      password:
+        type: string
+      username:
+        type: string
+    required:
+    - password
+    - username
+    type: object
+  controllers.ProductInput:
+    properties:
+      category:
+        type: string
+      description:
+        type: string
+      name:
+        type: string
+      price:
+        type: number
+      stock:
+        type: integer
+    required:
+    - category
+    - name
+    - price
+    - stock
+    type: object
+  controllers.RegisterInput:
+    properties:
+      email:
+        type: string
+      password:
+        minLength: 6
+        type: string
+      username:
+        type: string
+    required:
+    - email
+    - password
+    - username
+    type: object
+  utils.Response:
+    properties:
+      code:
+        type: integer
+      data: {}
+      message:
+        type: string
+      status:
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact:
+    email: support@swagger.io
+    name: API Support
+    url: http://www.swagger.io/support
+  description: This is a sample API server for a Go/SQLite project.
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  termsOfService: http://swagger.io/terms/
+  title: Sample Go API with SQLite
+  version: "1.0"
+paths:
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticate user and get token
+      parameters:
+      - description: Login credentials
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/controllers.LoginInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/utils.Response'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.Response'
+      summary: User login
+      tags:
+      - auth
+  /auth/register:
+    post:
+      consumes:
+      - application/json
+      description: Create a new account
+      parameters:
+      - description: Registration data
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/controllers.RegisterInput'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/utils.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.Response'
+      summary: Register a new user
+      tags:
+      - auth
+  /errors/400:
+    get:
+      responses: {}
+      summary: Trigger 400 Bad Request
+      tags:
+      - errors
+  /errors/401:
+    get:
+      responses: {}
+      summary: Trigger 401 Unauthorized
+      tags:
+      - errors
+  /errors/403:
+    get:
+      responses: {}
+      summary: Trigger 403 Forbidden
+      tags:
+      - errors
+  /errors/404:
+    get:
+      responses: {}
+      summary: Trigger 404 Not Found
+      tags:
+      - errors
+  /errors/405:
+    get:
+      responses: {}
+      summary: Trigger 405 Method Not Allowed
+      tags:
+      - errors
+  /errors/408:
+    get:
+      responses: {}
+      summary: Trigger 408 Request Timeout
+      tags:
+      - errors
+  /errors/500:
+    get:
+      responses: {}
+      summary: Trigger 500 Internal Server Error
+      tags:
+      - errors
+  /errors/503:
+    get:
+      responses: {}
+      summary: Trigger 503 Service Unavailable
+      tags:
+      - errors
+  /errors/504:
+    get:
+      responses: {}
+      summary: Trigger 504 Gateway Timeout
+      tags:
+      - errors
+  /products:
+    get:
+      consumes:
+      - application/json
+      description: Get a list of all sample products
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/utils.Response'
+      summary: Get all products
+      tags:
+      - public
+    post:
+      consumes:
+      - application/json
+      description: Add a new product to the catalog
+      parameters:
+      - description: Product data
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/controllers.ProductInput'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/utils.Response'
+      security:
+      - BearerAuth: []
+      summary: Create a new product
+      tags:
+      - protected
+  /products/{id}:
+    delete:
+      description: Remove a product from the catalog by ID
+      parameters:
+      - description: Product ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/utils.Response'
+      security:
+      - BearerAuth: []
+      summary: Delete a product
+      tags:
+      - protected
+    get:
+      consumes:
+      - application/json
+      description: Get a single product by its ID
+      parameters:
+      - description: Product ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/utils.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/utils.Response'
+      summary: Get product by ID
+      tags:
+      - public
+    put:
+      consumes:
+      - application/json
+      description: Update product details by ID
+      parameters:
+      - description: Product ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Updated product data
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/controllers.ProductInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/utils.Response'
+      security:
+      - BearerAuth: []
+      summary: Update an existing product
+      tags:
+      - protected
+  /products/categories:
+    get:
+      consumes:
+      - application/json
+      description: Get a list of unique product categories
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/utils.Response'
+      summary: Get all categories
+      tags:
+      - public
+  /products/category/{category}:
+    get:
+      consumes:
+      - application/json
+      description: Get a list of products in a specific category
+      parameters:
+      - description: Category name
+        in: path
+        name: category
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/utils.Response'
+      summary: Get products by category
+      tags:
+      - public
+  /products/cheap:
+    get:
+      consumes:
+      - application/json
+      description: Get products with price less than 100
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/utils.Response'
+      summary: Get cheap products
+      tags:
+      - public
+  /products/expensive:
+    get:
+      consumes:
+      - application/json
+      description: Get products with price greater than 500
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/utils.Response'
+      summary: Get expensive products
+      tags:
+      - public
+  /products/out-of-stock:
+    get:
+      consumes:
+      - application/json
+      description: Get products with zero stock
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/utils.Response'
+      summary: Get out of stock products
+      tags:
+      - public
+  /products/search:
+    get:
+      consumes:
+      - application/json
+      description: Search products by name
+      parameters:
+      - description: Search query
+        in: query
+        name: q
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/utils.Response'
+      summary: Search products
+      tags:
+      - public
+  /products/stats:
+    get:
+      consumes:
+      - application/json
+      description: Get basic statistics of products
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/utils.Response'
+      summary: Get product statistics
+      tags:
+      - public
+  /products/top-rated:
+    get:
+      consumes:
+      - application/json
+      description: Mock endpoint for top rated products
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/utils.Response'
+      summary: Get top rated products
+      tags:
+      - public
+  /user/profile:
+    get:
+      description: Get profile of the authenticated user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/utils.Response'
+      security:
+      - BearerAuth: []
+      summary: Get current user profile
+      tags:
+      - protected
+  /user/stats:
+    get:
+      description: Get some statistics for the logged-in user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/utils.Response'
+      security:
+      - BearerAuth: []
+      summary: Get authenticated user stats
+      tags:
+      - protected
+securityDefinitions:
+  BearerAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"
