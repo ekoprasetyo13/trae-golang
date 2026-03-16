@@ -1,13 +1,22 @@
 package main
 
 import (
+	"context"
+	"log"
+	"net/http"
+	"os"
+	"os/signal"
 	"sample-api/controllers"
 	"sample-api/middleware"
 	"sample-api/models"
+	"sample-api/telemetry"
+	"syscall"
+	"time"
 
 	_ "sample-api/docs"
 
 	"github.com/gin-gonic/gin"
+	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 )
@@ -32,24 +41,38 @@ import (
 // @name Authorization
 
 func main() {
-	// Initialize Database
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
+	shutdownTelemetry, err := telemetry.Init(ctx)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer func() {
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		_ = shutdownTelemetry(shutdownCtx)
+	}()
+
 	models.InitDB()
 
 	r := gin.Default()
+	serviceName := os.Getenv("OTEL_SERVICE_NAME")
+	if serviceName == "" {
+		serviceName = "sample-api"
+	}
+	r.Use(otelgin.Middleware(serviceName))
 
-	// Swagger documentation
 	r.GET("/docs-api/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	v1 := r.Group("/api/v1")
 	{
-		// Auth routes
 		auth := v1.Group("/auth")
 		{
 			auth.POST("/register", controllers.Register)
 			auth.POST("/login", controllers.Login)
 		}
 
-		// Public Product routes (10 APIs)
 		public := v1.Group("/products")
 		{
 			public.GET("", controllers.GetProducts)
@@ -64,7 +87,6 @@ func main() {
 			public.GET("/top-rated", controllers.GetTopRatedProducts)
 		}
 
-		// Error routes
 		errors := v1.Group("/errors")
 		{
 			errors.GET("/400", controllers.Error400)
@@ -78,7 +100,6 @@ func main() {
 			errors.GET("/504", controllers.Error504)
 		}
 
-		// Protected routes (5 APIs)
 		protected := v1.Group("")
 		protected.Use(middleware.AuthMiddleware())
 		{
@@ -90,5 +111,19 @@ func main() {
 		}
 	}
 
-	r.Run(":8080")
+	srv := &http.Server{
+		Addr:    ":8080",
+		Handler: r,
+	}
+
+	go func() {
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatal(err)
+		}
+	}()
+
+	<-ctx.Done()
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	_ = srv.Shutdown(shutdownCtx)
 }

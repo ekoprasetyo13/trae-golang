@@ -6,6 +6,7 @@ import (
 
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
+	"gorm.io/plugin/opentelemetry/tracing"
 )
 
 var DB *gorm.DB
@@ -16,6 +17,10 @@ func InitDB() {
 	DB, err = gorm.Open(sqlite.Open("sample.db"), &gorm.Config{})
 	if err != nil {
 		log.Fatal("Failed to connect to database:", err)
+	}
+
+	if err := DB.Use(tracing.NewPlugin()); err != nil {
+		log.Fatal("Failed to initialize database tracing:", err)
 	}
 
 	fmt.Println("Database connection established")
